@@ -1,0 +1,179 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { useAppStore } from "@/lib/store";
+import { ArrowRight, MapPin, Calendar, Clock, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+export default function ServiceMain() {
+  const [, setLocation] = useLocation();
+  const { contacts } = useAppStore();
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [returnDate, setReturnDate] = useState("");
+  const [returnTime, setReturnTime] = useState("");
+
+  const handleContactToggle = (phone: string) => {
+    setSelectedContacts(prev => 
+      prev.includes(phone) 
+        ? prev.filter(p => p !== phone)
+        : [...prev, phone]
+    );
+  };
+
+  const handleStartService = () => {
+    if (selectedContacts.length < 3) {
+      toast({
+        title: "تنبيه",
+        description: "يجب اختيار 3 جهات اتصال للطوارئ على الأقل",
+        variant: "destructive"
+      });
+      return;
+    }
+    if (!returnDate || !returnTime) {
+      toast({
+        title: "تنبيه",
+        description: "يرجى تحديد وقت وتاريخ العودة",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "تم تفعيل الخدمة بنجاح",
+      description: "سيتم إرسال التنبيهات في الموعد المحدد",
+      className: "bg-primary text-primary-foreground"
+    });
+    
+    // Simulate navigation back to home or a status page
+    setTimeout(() => setLocation("/"), 2000);
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground font-sans p-4 pb-24" dir="rtl">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6 pt-4">
+        <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
+          <ArrowRight className="w-6 h-6" />
+        </Button>
+        <h1 className="text-xl font-bold">معلومات الرحلة</h1>
+      </div>
+
+      <div className="space-y-6">
+        {/* Map Section */}
+        <Card className="bg-[#1e1e20] border-white/5 overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-primary text-sm flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              موقع الوجهة (نطاق 10 كم)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 h-48 bg-muted relative group cursor-pointer">
+            {/* Mock Map */}
+            <div className="absolute inset-0 bg-neutral-800 flex items-center justify-center bg-[url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg')] bg-cover opacity-50">
+              <div className="w-32 h-32 rounded-full border-2 border-primary/50 bg-primary/10 flex items-center justify-center animate-pulse">
+                <MapPin className="w-8 h-8 text-primary drop-shadow-[0_0_10px_rgba(59,191,167,0.8)]" fill="currentColor" />
+              </div>
+            </div>
+            <div className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-xs text-white">
+              اضغط لتحديد الموقع
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Emergency Contacts */}
+        <Card className="bg-[#1e1e20] border-white/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-primary text-sm flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              جهات اتصال الطوارئ
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              سيتم إرسال رسالة تنبيه لهذه الجهات في حين حان وقت العودة ولم يتم تأكيد الوصول.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-48 pr-4">
+              <div className="space-y-3">
+                {contacts.length > 0 ? (
+                  contacts.map((contact, idx) => (
+                    <div key={idx} className="flex items-center space-x-reverse space-x-3 p-2 rounded hover:bg-white/5 transition-colors">
+                      <Checkbox 
+                        id={`contact-${idx}`} 
+                        checked={selectedContacts.includes(contact.phone)}
+                        onCheckedChange={() => handleContactToggle(contact.phone)}
+                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                      <div className="grid gap-0.5 flex-1 mr-3">
+                        <Label htmlFor={`contact-${idx}`} className="font-medium cursor-pointer">
+                          {contact.name}
+                        </Label>
+                        <span className="text-xs text-muted-foreground">{contact.relationship} - {contact.phone}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-muted-foreground py-4 text-sm">
+                    لا توجد جهات اتصال محفوظة. يرجى إعداد الخدمة أولاً.
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+            <div className="mt-2 text-xs text-right text-primary/80">
+              {selectedContacts.length} محدد (مطلوب 3 على الأقل)
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Return Time */}
+        <Card className="bg-[#1e1e20] border-white/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-primary text-sm flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              موعد العودة المتوقع
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs">تاريخ العودة</Label>
+              <div className="relative">
+                <Input 
+                  type="date" 
+                  value={returnDate}
+                  onChange={(e) => setReturnDate(e.target.value)}
+                  className="bg-background/50 border-white/10 text-right appearance-none" 
+                  style={{ colorScheme: "dark" }}
+                />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">وقت العودة</Label>
+              <div className="relative">
+                <Input 
+                  type="time" 
+                  value={returnTime}
+                  onChange={(e) => setReturnTime(e.target.value)}
+                  className="bg-background/50 border-white/10 text-right appearance-none"
+                  style={{ colorScheme: "dark" }}
+                />
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Button 
+          onClick={handleStartService}
+          className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90 mt-4 shadow-[0_0_20px_rgba(59,191,167,0.3)]"
+        >
+          ابدأ الخدمة
+        </Button>
+      </div>
+    </div>
+  );
+}
