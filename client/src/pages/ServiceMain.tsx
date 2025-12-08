@@ -10,6 +10,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function ServiceMain() {
   const [, setLocation] = useLocation();
@@ -17,6 +26,7 @@ export default function ServiceMain() {
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [returnDate, setReturnDate] = useState("");
   const [returnTime, setReturnTime] = useState("");
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
   const handleContactToggle = (phone: string) => {
     setSelectedContacts(prev => 
@@ -44,14 +54,12 @@ export default function ServiceMain() {
       return;
     }
 
-    toast({
-      title: "تم تفعيل الخدمة بنجاح",
-      description: "سيتم إرسال التنبيهات في الموعد المحدد",
-      className: "bg-primary text-primary-foreground"
-    });
-    
-    // Simulate navigation back to home or a status page
-    setTimeout(() => setLocation("/"), 2000);
+    setIsSuccessOpen(true);
+  };
+
+  const handleSuccessClose = () => {
+    setIsSuccessOpen(false);
+    setLocation("/");
   };
 
   return (
@@ -186,6 +194,43 @@ export default function ServiceMain() {
           ابدأ الخدمة
         </Button>
       </div>
+
+      <AlertDialog open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>
+        <AlertDialogContent className="bg-[#1e1e20] border-white/10 text-right" dir="rtl">
+          <AlertDialogHeader className="text-right">
+            <AlertDialogTitle className="text-primary text-xl font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-6 h-6" />
+              تم تفعيل الخدمة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400 pt-2">
+              تم تفعيل خدمة تتبع بنجاح. سيتم إرسال التنبيهات في الموعد المحدد في حال عدم العودة.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-start">
+            <AlertDialogAction onClick={handleSuccessClose} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              العودة للرئيسية
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+function CheckCircle2({ className }: { className?: string }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
   );
 }

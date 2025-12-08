@@ -111,17 +111,6 @@ export default function Setup() {
           <Card className="bg-[#1e1e20] border-white/5">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-primary text-lg">جهات الاتصال (3-5)</CardTitle>
-              {fields.length < 5 && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => append({ name: "", phone: "", relationship: "" })}
-                  className="h-8 gap-2 text-xs"
-                >
-                  <Plus className="w-3 h-3" /> إضافة
-                </Button>
-              )}
             </CardHeader>
             <CardContent className="space-y-6">
               {fields.map((field, index) => (
@@ -186,6 +175,17 @@ export default function Setup() {
               ))}
               {form.formState.errors.contacts && (
                 <p className="text-destructive text-sm">{form.formState.errors.contacts.message}</p>
+              )}
+              
+              {fields.length < 5 && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => append({ name: "", phone: "", relationship: "" })}
+                  className="w-full mt-4 gap-2 border-dashed border-primary/50 text-primary hover:text-primary hover:bg-primary/10"
+                >
+                  <Plus className="w-4 h-4" /> إضافة
+                </Button>
               )}
             </CardContent>
           </Card>
