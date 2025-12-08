@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
-import { ArrowRight, MapPin, Calendar, Clock, AlertTriangle } from "lucide-react";
+import { ArrowRight, MapPin, Calendar, Clock, AlertTriangle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,11 +65,22 @@ export default function ServiceMain() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans p-4 pb-24" dir="rtl">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6 pt-4">
-        <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
-          <ArrowRight className="w-6 h-6" />
+      <div className="flex items-center justify-between mb-6 pt-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
+            <ArrowRight className="w-6 h-6" />
+          </Button>
+          <h1 className="text-xl font-bold">معلومات الرحلة</h1>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setLocation("/setup")} 
+          className="gap-2 border-white/10 hover:bg-white/5 text-xs h-8"
+        >
+          <Settings className="w-3.5 h-3.5" />
+          تعديل الإعدادات
         </Button>
-        <h1 className="text-xl font-bold">معلومات الرحلة</h1>
       </div>
 
       <div className="space-y-6">
