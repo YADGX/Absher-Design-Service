@@ -13,10 +13,12 @@ export interface MedicalInfo {
 }
 
 interface AppState {
+  userProfileId: number | null;
   isSetupComplete: boolean;
   contacts: Contact[];
   medicalInfo: MedicalInfo | null;
   city: string;
+  setUserProfileId: (id: number) => void;
   setSetupComplete: (complete: boolean) => void;
   setContacts: (contacts: Contact[]) => void;
   setMedicalInfo: (info: MedicalInfo) => void;
@@ -26,10 +28,12 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
+      userProfileId: null,
       isSetupComplete: false,
       contacts: [],
       medicalInfo: null,
       city: '',
+      setUserProfileId: (id) => set({ userProfileId: id }),
       setSetupComplete: (complete) => set({ isSetupComplete: complete }),
       setContacts: (contacts) => set({ contacts }),
       setMedicalInfo: (info) => set({ medicalInfo: info }),

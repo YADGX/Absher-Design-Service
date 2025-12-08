@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useMutation } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +23,7 @@ import {
 
 export default function ServiceMain() {
   const [, setLocation] = useLocation();
-  const { contacts } = useAppStore();
+  const { contacts, userProfileId } = useAppStore();
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [returnDate, setReturnDate] = useState("");
   const [returnTime, setReturnTime] = useState("");
@@ -35,6 +36,37 @@ export default function ServiceMain() {
         : [...prev, phone]
     );
   };
+
+  const startTripMutation = useMutation({
+    mutationFn: async () => {
+      if (!userProfileId) throw new Error("No user profile");
+      
+      const res = await fetch("/api/trips", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userProfileId,
+          returnDate,
+          returnTimeSlot: returnTime,
+          selectedContactIds: JSON.stringify(selectedContacts),
+          isActive: true,
+        }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to start trip");
+      return res.json();
+    },
+    onSuccess: () => {
+      setIsSuccessOpen(true);
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "فشل تفعيل الخدمة. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleStartService = () => {
     if (selectedContacts.length < 3) {
@@ -54,7 +86,7 @@ export default function ServiceMain() {
       return;
     }
 
-    setIsSuccessOpen(true);
+    startTripMutation.mutate();
   };
 
   const handleSuccessClose = () => {
@@ -64,7 +96,6 @@ export default function ServiceMain() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans p-4 pb-24" dir="rtl">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6 pt-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
@@ -84,7 +115,6 @@ export default function ServiceMain() {
       </div>
 
       <div className="space-y-6">
-        {/* Map Section */}
         <Card className="bg-[#1e1e20] border-white/5 overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-primary text-sm flex items-center gap-2">
@@ -93,7 +123,6 @@ export default function ServiceMain() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 h-48 bg-muted relative group cursor-pointer">
-            {/* Mock Map */}
             <div className="absolute inset-0 bg-neutral-800 flex items-center justify-center bg-[url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg')] bg-cover opacity-50">
               <div className="w-32 h-32 rounded-full border-2 border-primary/50 bg-primary/10 flex items-center justify-center animate-pulse">
                 <MapPin className="w-8 h-8 text-primary drop-shadow-[0_0_10px_rgba(59,191,167,0.8)]" fill="currentColor" />
@@ -105,7 +134,6 @@ export default function ServiceMain() {
           </CardContent>
         </Card>
 
-        {/* Emergency Contacts */}
         <Card className="bg-[#1e1e20] border-white/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-primary text-sm flex items-center gap-2">
@@ -149,7 +177,6 @@ export default function ServiceMain() {
           </CardContent>
         </Card>
 
-        {/* Return Time */}
         <Card className="bg-[#1e1e20] border-white/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-primary text-sm flex items-center gap-2">
@@ -200,9 +227,10 @@ export default function ServiceMain() {
 
         <Button 
           onClick={handleStartService}
+          disabled={startTripMutation.isPending}
           className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90 mt-4 shadow-[0_0_20px_rgba(59,191,167,0.3)]"
         >
-          ابدأ الخدمة
+          {startTripMutation.isPending ? "جاري التفعيل..." : "ابدأ الخدمة"}
         </Button>
       </div>
 

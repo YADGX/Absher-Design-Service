@@ -12,8 +12,9 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
-// Validation Schema
 const setupSchema = z.object({
   city: z.string().min(1, "يرجى اختيار المدينة"),
   contacts: z.array(z.object({
@@ -29,7 +30,7 @@ type SetupFormValues = z.infer<typeof setupSchema>;
 
 export default function Setup() {
   const [, setLocation] = useLocation();
-  const { setSetupComplete, setContacts, setMedicalInfo, setCity } = useAppStore();
+  const { setSetupComplete, setContacts, setMedicalInfo, setCity, setUserProfileId, userProfileId } = useAppStore();
   
   const form = useForm<SetupFormValues>({
     resolver: zodResolver(setupSchema),
@@ -50,20 +51,60 @@ export default function Setup() {
     name: "contacts",
   });
 
+  const saveProfileMutation = useMutation({
+    mutationFn: async (data: SetupFormValues) => {
+      const profileRes = await fetch(userProfileId ? `/api/profile/${userProfileId}` : "/api/profile", {
+        method: userProfileId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          city: data.city,
+          bloodType: data.bloodType || null,
+          chronicDiseases: data.chronicDiseases || null,
+        }),
+      });
+      
+      if (!profileRes.ok) throw new Error("Failed to save profile");
+      const profile = await profileRes.json();
+      
+      for (const contact of data.contacts) {
+        await fetch("/api/contacts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userProfileId: profile.id,
+            ...contact,
+          }),
+        });
+      }
+      
+      return profile;
+    },
+    onSuccess: (profile, data) => {
+      setUserProfileId(profile.id);
+      setCity(data.city);
+      setContacts(data.contacts);
+      setMedicalInfo({
+        bloodType: data.bloodType || "",
+        chronicDiseases: data.chronicDiseases || "",
+      });
+      setSetupComplete(true);
+      setLocation("/splash");
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "فشل حفظ البيانات. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: SetupFormValues) => {
-    setCity(data.city);
-    setContacts(data.contacts);
-    setMedicalInfo({
-      bloodType: data.bloodType || "",
-      chronicDiseases: data.chronicDiseases || "",
-    });
-    setSetupComplete(true);
-    setLocation("/splash");
+    saveProfileMutation.mutate(data);
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans p-4" dir="rtl">
-      {/* Header */}
       <div className="flex items-center gap-4 mb-8 pt-4">
         <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
           <ArrowRight className="w-6 h-6" />
@@ -74,7 +115,6 @@ export default function Setup() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-10">
           
-          {/* City Selection */}
           <Card className="bg-[#1e1e20] border-white/5">
             <CardHeader>
               <CardTitle className="text-primary text-lg">بيانات السكن</CardTitle>
@@ -107,7 +147,6 @@ export default function Setup() {
             </CardContent>
           </Card>
 
-          {/* Contacts Section */}
           <Card className="bg-[#1e1e20] border-white/5">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-primary text-lg">جهات الاتصال (3-5)</CardTitle>
@@ -190,7 +229,6 @@ export default function Setup() {
             </CardContent>
           </Card>
 
-          {/* Medical Info Section */}
           <Card className="bg-[#1e1e20] border-white/5">
             <CardHeader>
               <CardTitle className="text-primary text-lg">المعلومات الطبية (اختياري)</CardTitle>
@@ -233,8 +271,12 @@ export default function Setup() {
             </CardContent>
           </Card>
 
-          <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 text-lg">
-            حفظ ومتابعة
+          <Button 
+            type="submit" 
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 text-lg"
+            disabled={saveProfileMutation.isPending}
+          >
+            {saveProfileMutation.isPending ? "جاري الحفظ..." : "حفظ ومتابعة"}
           </Button>
         </form>
       </Form>
