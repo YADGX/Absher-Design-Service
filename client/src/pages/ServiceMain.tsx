@@ -26,8 +26,11 @@ export default function ServiceMain() {
   const { contacts, userProfileId } = useAppStore();
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [returnDate, setReturnDate] = useState("");
-  const [returnTime, setReturnTime] = useState("");
+  const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
+  const [timeSlot, setTimeSlot] = useState<"early" | "late" | "">("");
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+
+  const returnTime = timeSlot ? `${timePeriod}_${timeSlot}` : "";
 
   const handleContactToggle = (phone: string) => {
     setSelectedContacts(prev => 
@@ -198,28 +201,61 @@ export default function ServiceMain() {
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label className="text-xs">وقت العودة</Label>
+              
               <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: "morning", label: "06:00 ص - 11:59 ص" },
-                  { id: "afternoon", label: "12:00 م - 05:59 م" },
-                  { id: "evening", label: "06:00 م - 11:59 م" },
-                  { id: "night", label: "12:00 ص - 05:59 ص" }
-                ].map((timeSlot) => (
-                  <button
-                    key={timeSlot.id}
-                    onClick={() => setReturnTime(timeSlot.id)}
-                    className={cn(
-                      "p-3 rounded-lg text-xs font-medium border transition-all",
-                      returnTime === timeSlot.id 
-                        ? "bg-primary/20 border-primary text-primary" 
-                        : "bg-background/50 border-white/10 hover:bg-white/5"
-                    )}
-                  >
-                    {timeSlot.label}
-                  </button>
-                ))}
+                <button
+                  onClick={() => setTimePeriod("AM")}
+                  data-testid="toggle-am"
+                  className={cn(
+                    "p-3 rounded-lg text-sm font-bold border transition-all",
+                    timePeriod === "AM"
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : "bg-background/50 border-white/10 hover:bg-white/5 text-muted-foreground"
+                  )}
+                >
+                  صباحاً (AM)
+                </button>
+                <button
+                  onClick={() => setTimePeriod("PM")}
+                  data-testid="toggle-pm"
+                  className={cn(
+                    "p-3 rounded-lg text-sm font-bold border transition-all",
+                    timePeriod === "PM"
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : "bg-background/50 border-white/10 hover:bg-white/5 text-muted-foreground"
+                  )}
+                >
+                  مساءً (PM)
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setTimeSlot("early")}
+                  data-testid="slot-early"
+                  className={cn(
+                    "p-3 rounded-lg text-xs font-medium border transition-all",
+                    timeSlot === "early"
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-background/50 border-white/10 hover:bg-white/5"
+                  )}
+                >
+                  6:00 – 11:59
+                </button>
+                <button
+                  onClick={() => setTimeSlot("late")}
+                  data-testid="slot-late"
+                  className={cn(
+                    "p-3 rounded-lg text-xs font-medium border transition-all",
+                    timeSlot === "late"
+                      ? "bg-primary/20 border-primary text-primary"
+                      : "bg-background/50 border-white/10 hover:bg-white/5"
+                  )}
+                >
+                  12:00 – 5:59
+                </button>
               </div>
             </div>
           </CardContent>
