@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 export default function ServiceMain() {
   const [, setLocation] = useLocation();
@@ -153,15 +154,26 @@ export default function ServiceMain() {
             </div>
             <div className="space-y-2">
               <Label className="text-xs">وقت العودة</Label>
-              <div className="relative">
-                <Input 
-                  type="time" 
-                  value={returnTime}
-                  onChange={(e) => setReturnTime(e.target.value)}
-                  className="bg-background/50 border-white/10 text-right appearance-none"
-                  style={{ colorScheme: "dark" }}
-                />
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: "morning", label: "06:00 ص - 11:59 ص" },
+                  { id: "afternoon", label: "12:00 م - 05:59 م" },
+                  { id: "evening", label: "06:00 م - 11:59 م" },
+                  { id: "night", label: "12:00 ص - 05:59 ص" }
+                ].map((timeSlot) => (
+                  <button
+                    key={timeSlot.id}
+                    onClick={() => setReturnTime(timeSlot.id)}
+                    className={cn(
+                      "p-3 rounded-lg text-xs font-medium border transition-all",
+                      returnTime === timeSlot.id 
+                        ? "bg-primary/20 border-primary text-primary" 
+                        : "bg-background/50 border-white/10 hover:bg-white/5"
+                    )}
+                  >
+                    {timeSlot.label}
+                  </button>
+                ))}
               </div>
             </div>
           </CardContent>
