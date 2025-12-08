@@ -79,7 +79,7 @@ export default function ServiceMain() {
           className="gap-2 border-white/10 hover:bg-white/5 text-xs h-8"
         >
           <Settings className="w-3.5 h-3.5" />
-          تعديل الإعدادات
+          تعديل إعدادات الخدمة
         </Button>
       </div>
 
