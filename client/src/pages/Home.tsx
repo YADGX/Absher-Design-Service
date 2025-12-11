@@ -12,11 +12,7 @@ export default function Home() {
 
   const handleServiceClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isSetupComplete) {
-      setLocation("/service-main");
-    } else {
-      setLocation("/setup");
-    }
+    setLocation("/splash");
   };
 
   const services = [

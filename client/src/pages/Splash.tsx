@@ -1,9 +1,21 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { TrackingIcon } from "@/components/TrackingIcon";
 import { motion } from "framer-motion";
+import { useAppStore } from "@/lib/store";
 
 export default function Splash() {
+  const [, setLocation] = useLocation();
+  const { isSetupComplete } = useAppStore();
+
+  const handleContinue = () => {
+    if (isSetupComplete) {
+      setLocation("/service-main");
+    } else {
+      setLocation("/setup");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center relative overflow-hidden" dir="rtl">
       
@@ -37,7 +49,7 @@ export default function Splash() {
         transition={{ delay: 0.4, duration: 0.5 }}
         className="text-xl text-muted-foreground leading-relaxed max-w-sm mb-12"
       >
-        "تتبع، نضيء ليلاً دامساً، بحماية تلقائية لرحلاتك البرية."
+        "نضيء ليلاً دامساً، بحماية تلقائية لرحلاتك البرية"
       </motion.p>
 
       <motion.div
@@ -46,11 +58,12 @@ export default function Splash() {
         transition={{ delay: 0.6, duration: 0.5 }}
         className="w-full max-w-xs"
       >
-        <Link href="/service-main">
-          <Button className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90">
-            اذهب إلى الخدمة
-          </Button>
-        </Link>
+        <Button 
+          onClick={handleContinue}
+          className="w-full h-14 text-lg font-bold bg-primary hover:bg-primary/90"
+        >
+          اذهب إلى الخدمة
+        </Button>
       </motion.div>
     </div>
   );

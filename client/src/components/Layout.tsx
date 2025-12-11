@@ -7,7 +7,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { icon: Home, label: "الرئيسية", path: "/home-placeholder" },
-    { icon: User, label: "خدماتي", path: "/" },
+    { icon: User, label: "خدماتي", path: "/home" },
     { icon: Users, label: "عائلتي", path: "/family" },
     { icon: Briefcase, label: "عمالتي", path: "/workers" },
     { icon: Grid, label: "خدمات أخرى", path: "/more" },
@@ -21,11 +21,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Bell className="w-6 h-6 text-primary" />
           <Settings className="w-6 h-6 text-primary" />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-right">
-            <h1 className="text-xl font-bold">أبشر</h1>
-          </div>
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Saudi_Vision_2030_logo.svg/1200px-Saudi_Vision_2030_logo.svg.png" alt="Vision 2030" className="h-8 w-auto filter invert brightness-0" />
+        <div className="flex items-center">
+          <img 
+            src="/absher-logo.png" 
+            alt="Absher" 
+            className="h-10 w-auto" 
+          />
         </div>
       </header>
 
@@ -38,7 +39,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <nav className="fixed bottom-0 left-0 right-0 bg-[#2C2C2C] border-t border-[#333] px-2 py-3 z-50">
         <ul className="flex justify-between items-center">
           {navItems.map((item) => {
-            const isActive = location === item.path || (item.path === '/' && location === '/');
+            const isActive = location === item.path;
             return (
               <li key={item.label} className="flex-1">
                 <Link href={item.path}>

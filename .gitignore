@@ -4,3 +4,8 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+# Flutter build files
+flutter_shell/.dart_tool/
+flutter_shell/build/
+flutter_shell/.flutter-plugins
+flutter_shell/.flutter-plugins-dependencies

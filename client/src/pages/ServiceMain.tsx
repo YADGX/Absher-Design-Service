@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import MapSelector from "@/components/MapSelector";
 
 export default function ServiceMain() {
   const [, setLocation] = useLocation();
@@ -29,6 +30,7 @@ export default function ServiceMain() {
   const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
   const [timeSlot, setTimeSlot] = useState<"early" | "late" | "">("");
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [destinationLocation, setDestinationLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const returnTime = timeSlot ? `${timePeriod}_${timeSlot}` : "";
 
@@ -52,6 +54,8 @@ export default function ServiceMain() {
           returnDate,
           returnTimeSlot: returnTime,
           selectedContactIds: JSON.stringify(selectedContacts),
+          destinationLat: destinationLocation?.lat.toString() || null,
+          destinationLng: destinationLocation?.lng.toString() || null,
           isActive: true,
         }),
       });
@@ -88,20 +92,28 @@ export default function ServiceMain() {
       });
       return;
     }
+    if (!destinationLocation) {
+      toast({
+        title: "تنبيه",
+        description: "يرجى تحديد موقع الوجهة على الخريطة",
+        variant: "destructive"
+      });
+      return;
+    }
 
     startTripMutation.mutate();
   };
 
   const handleSuccessClose = () => {
     setIsSuccessOpen(false);
-    setLocation("/");
+    setLocation("/home");
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans p-4 pb-24" dir="rtl">
       <div className="flex items-center justify-between mb-6 pt-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/home")}>
             <ArrowRight className="w-6 h-6" />
           </Button>
           <h1 className="text-xl font-bold">معلومات الرحلة</h1>
@@ -125,15 +137,14 @@ export default function ServiceMain() {
               موقع الوجهة (نطاق 10 كم)
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 h-48 bg-muted relative group cursor-pointer">
-            <div className="absolute inset-0 bg-neutral-800 flex items-center justify-center bg-[url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg')] bg-cover opacity-50">
-              <div className="w-32 h-32 rounded-full border-2 border-primary/50 bg-primary/10 flex items-center justify-center animate-pulse">
-                <MapPin className="w-8 h-8 text-primary drop-shadow-[0_0_10px_rgba(59,191,167,0.8)]" fill="currentColor" />
-              </div>
-            </div>
-            <div className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-xs text-white">
-              اضغط لتحديد الموقع
-            </div>
+          <CardContent className="p-0 h-64 bg-muted relative">
+            <MapSelector
+              onLocationSelect={(lat, lng) => {
+                setDestinationLocation({ lat, lng });
+              }}
+              selectedLocation={destinationLocation}
+              height="256px"
+            />
           </CardContent>
         </Card>
 
@@ -242,7 +253,7 @@ export default function ServiceMain() {
                       : "bg-background/50 border-white/10 hover:bg-white/5"
                   )}
                 >
-                  6:00 – 11:59
+                  6:00 – 12:00
                 </button>
                 <button
                   onClick={() => setTimeSlot("late")}

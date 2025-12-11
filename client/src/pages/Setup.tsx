@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAppStore, Contact } from "@/lib/store";
 import { ArrowRight, Plus, Trash2, CheckCircle2 } from "lucide-react";
@@ -12,7 +12,7 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 
 const setupSchema = z.object({
@@ -30,8 +30,38 @@ type SetupFormValues = z.infer<typeof setupSchema>;
 
 export default function Setup() {
   const [, setLocation] = useLocation();
-  const { setSetupComplete, setContacts, setMedicalInfo, setCity, setUserProfileId, userProfileId } = useAppStore();
+  const { setSetupComplete, setContacts, setMedicalInfo, setCity, setUserProfileId, userProfileId, contacts: storeContacts, city: storeCity, medicalInfo: storeMedicalInfo } = useAppStore();
   
+  // Fetch existing contacts from API if userProfileId exists
+  const { data: apiContacts } = useQuery({
+    queryKey: ["contacts", userProfileId],
+    queryFn: async () => {
+      if (!userProfileId) return [];
+      const res = await fetch(`/api/contacts/${userProfileId}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!userProfileId,
+  });
+
+  // Fetch existing profile data if userProfileId exists
+  const { data: profileData } = useQuery({
+    queryKey: ["profile", userProfileId],
+    queryFn: async () => {
+      if (!userProfileId) return null;
+      const res = await fetch(`/api/profile/${userProfileId}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!userProfileId,
+  });
+
+  // Determine which contacts to use: API contacts (most up-to-date) > store contacts > empty
+  // Map API contacts to form format (only name, phone, relationship)
+  const existingContacts = apiContacts && apiContacts.length > 0 
+    ? apiContacts.map(c => ({ name: c.name, phone: c.phone, relationship: c.relationship }))
+    : (storeContacts && storeContacts.length > 0 ? storeContacts : []);
+
   const form = useForm<SetupFormValues>({
     resolver: zodResolver(setupSchema),
     defaultValues: {
@@ -46,10 +76,36 @@ export default function Setup() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "contacts",
   });
+
+  // Load existing data into form when component mounts or data is fetched
+  useEffect(() => {
+    const hasExistingData = existingContacts.length > 0 || profileData || storeCity || storeMedicalInfo;
+    
+    if (hasExistingData) {
+      // Ensure at least 3 contact slots, pad with empty ones if needed
+      const contactsToLoad = existingContacts.length > 0 
+        ? existingContacts.length >= 3
+          ? existingContacts
+          : [...existingContacts, ...Array(3 - existingContacts.length).fill({ name: "", phone: "", relationship: "" })]
+        : [
+            { name: "", phone: "", relationship: "" },
+            { name: "", phone: "", relationship: "" },
+            { name: "", phone: "", relationship: "" },
+          ];
+
+      form.reset({
+        city: profileData?.city || storeCity || "",
+        contacts: contactsToLoad,
+        bloodType: profileData?.bloodType || storeMedicalInfo?.bloodType || "",
+        chronicDiseases: profileData?.chronicDiseases || storeMedicalInfo?.chronicDiseases || "",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiContacts, storeContacts, profileData, storeCity, storeMedicalInfo]);
 
   const saveProfileMutation = useMutation({
     mutationFn: async (data: SetupFormValues) => {
@@ -66,15 +122,33 @@ export default function Setup() {
       if (!profileRes.ok) throw new Error("Failed to save profile");
       const profile = await profileRes.json();
       
+      // Delete existing contacts first if updating
+      if (userProfileId) {
+        const existingContactsRes = await fetch(`/api/contacts/${userProfileId}`);
+        if (existingContactsRes.ok) {
+          const existingContacts = await existingContactsRes.json();
+          // Delete old contacts
+          for (const oldContact of existingContacts) {
+            await fetch(`/api/contacts/${oldContact.id}`, {
+              method: "DELETE",
+            });
+          }
+        }
+      }
+
+      // Add new contacts
       for (const contact of data.contacts) {
-        await fetch("/api/contacts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userProfileId: profile.id,
-            ...contact,
-          }),
-        });
+        // Only add non-empty contacts
+        if (contact.name && contact.phone && contact.relationship) {
+          await fetch("/api/contacts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userProfileId: profile.id,
+              ...contact,
+            }),
+          });
+        }
       }
       
       return profile;
@@ -88,7 +162,7 @@ export default function Setup() {
         chronicDiseases: data.chronicDiseases || "",
       });
       setSetupComplete(true);
-      setLocation("/splash");
+      setLocation("/service-main");
     },
     onError: () => {
       toast({
@@ -106,7 +180,7 @@ export default function Setup() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans p-4" dir="rtl">
       <div className="flex items-center gap-4 mb-8 pt-4">
-        <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
+        <Button variant="ghost" size="icon" onClick={() => setLocation("/home")}>
           <ArrowRight className="w-6 h-6" />
         </Button>
         <h1 className="text-xl font-bold">إعدادات خدمة تتبع</h1>
