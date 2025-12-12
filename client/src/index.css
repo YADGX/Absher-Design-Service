@@ -45,7 +45,42 @@
 }
 
 :root {
-  /* Absher-inspired Dark Theme by default */
+  /* Absher-inspired Light Theme */
+  --background: 0 0% 100%; /* White */
+  --foreground: 240 10% 10%; /* Dark grey for text */
+
+  --card: 0 0% 98%; /* Very light grey for cards */
+  --card-foreground: 240 10% 10%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 10%;
+
+  --primary: 160 60% 45%; /* Absher Greenish Teal - slightly darker for light mode */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 240 5% 96%; /* Light grey */
+  --secondary-foreground: 240 10% 10%;
+
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 5% 45%;
+
+  --accent: 160 60% 45%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 240 5% 90%; /* Light border */
+  --input: 240 5% 96%;
+  --ring: 160 60% 45%;
+
+  --radius: 0.75rem;
+  
+  --font-sans: "GE SS Unique", "Cairo", sans-serif;
+}
+
+.dark {
+  /* Absher-inspired Dark Theme */
   --background: 240 5% 10%; /* Very dark grey #18181b */
   --foreground: 0 0% 98%;
 
@@ -70,33 +105,6 @@
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 240 4% 25%;
-  --input: 240 4% 25%;
-  --ring: 160 50% 50%;
-
-  --radius: 0.75rem;
-  
-  --font-sans: "GE SS Unique", "Cairo", sans-serif;
-}
-
-.dark {
-  /* Same as root since we are defaulting to dark mode style */
-  --background: 240 5% 10%;
-  --foreground: 0 0% 98%;
-  --card: 240 4% 16%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 5% 10%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 160 50% 50%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 240 4% 25%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 4% 20%;
-  --muted-foreground: 240 5% 65%;
-  --accent: 160 50% 50%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
   --border: 240 4% 25%;
   --input: 240 4% 25%;
   --ring: 160 50% 50%;

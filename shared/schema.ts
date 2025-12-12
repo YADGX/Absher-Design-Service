@@ -33,6 +33,15 @@ export const trips = pgTable("trips", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const locationUpdates = pgTable("location_updates", {
+  id: serial("id").primaryKey(),
+  tripId: serial("trip_id").notNull().references(() => trips.id, { onDelete: "cascade" }),
+  latitude: text("latitude").notNull(),
+  longitude: text("longitude").notNull(),
+  accuracy: text("accuracy"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
   id: true,
   createdAt: true,
@@ -57,3 +66,11 @@ export type InsertContact = z.infer<typeof insertContactSchema>;
 
 export type Trip = typeof trips.$inferSelect;
 export type InsertTrip = z.infer<typeof insertTripSchema>;
+
+export const insertLocationUpdateSchema = createInsertSchema(locationUpdates).omit({
+  id: true,
+  timestamp: true,
+});
+
+export type LocationUpdate = typeof locationUpdates.$inferSelect;
+export type InsertLocationUpdate = z.infer<typeof insertLocationUpdateSchema>;

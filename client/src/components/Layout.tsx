@@ -1,9 +1,21 @@
-import { Bell, Settings, Home, User, Users, Briefcase, Grid } from "lucide-react";
+import { Bell, Settings, Home, User, Users, Briefcase, Grid, Sun, Moon } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/lib/store";
+import { useEffect } from "react";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { theme, toggleTheme } = useAppStore();
+
+  // Apply theme on mount
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   const navItems = [
     { icon: Home, label: "الرئيسية", path: "/home-placeholder" },
@@ -16,10 +28,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans" dir="rtl">
       {/* Header */}
-      <header className="p-4 flex justify-between items-center bg-background sticky top-0 z-10">
-        <div className="flex gap-4">
-          <Bell className="w-6 h-6 text-primary" />
-          <Settings className="w-6 h-6 text-primary" />
+      <header className="p-4 flex justify-between items-center bg-background sticky top-0 z-10 border-b border-border">
+        <div className="flex gap-4 items-center">
+          <button className="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Notifications">
+            <Bell className="w-6 h-6 text-primary" />
+          </button>
+          <button className="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Settings">
+            <Settings className="w-6 h-6 text-primary" />
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-6 h-6 text-primary" />
+            ) : (
+              <Moon className="w-6 h-6 text-primary" />
+            )}
+          </button>
         </div>
         <div className="flex items-center">
           <img 
@@ -36,7 +63,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#2C2C2C] border-t border-[#333] px-2 py-3 z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-2 py-3 z-50">
         <ul className="flex justify-between items-center">
           {navItems.map((item) => {
             const isActive = location === item.path;
@@ -45,7 +72,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link href={item.path}>
                   <a className={cn(
                     "flex flex-col items-center justify-center gap-1 text-[10px]",
-                    isActive ? "text-primary" : "text-gray-400"
+                    isActive ? "text-primary" : "text-muted-foreground"
                   )}>
                     <item.icon className={cn("w-6 h-6", isActive && "fill-current")} />
                     <span>{item.label}</span>

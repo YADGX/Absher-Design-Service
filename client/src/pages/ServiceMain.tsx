@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAppStore } from "@/lib/store";
-import { ArrowRight, MapPin, Calendar, Clock, AlertTriangle, Settings } from "lucide-react";
+import { ArrowRight, MapPin, Clock, AlertTriangle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,87 @@ export default function ServiceMain() {
   const [timePeriod, setTimePeriod] = useState<"AM" | "PM">("AM");
   const [timeSlot, setTimeSlot] = useState<"early" | "late" | "">("");
   const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [createdTripId, setCreatedTripId] = useState<number | null>(null);
   const [destinationLocation, setDestinationLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState<boolean | null>(null);
+
+  // Check location permission on mount (bypassed for now)
+  useEffect(() => {
+    // Temporarily bypass location permission check
+    setLocationPermissionGranted(true);
+    
+    // Uncomment below to re-enable location permission check
+    /*
+    const checkLocationPermission = async () => {
+      if (!navigator.geolocation) {
+        setLocationPermissionGranted(false);
+        setLocation("/location-denied");
+        return;
+      }
+
+      try {
+        // Check permission status
+        const permission = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+        
+        if (permission.state === 'granted') {
+          setLocationPermissionGranted(true);
+        } else if (permission.state === 'denied') {
+          setLocationPermissionGranted(false);
+          setLocation("/location-denied");
+        } else {
+          // Permission is 'prompt' - allow user to continue, but request permission
+          // Don't redirect immediately, let user interact first
+          setLocationPermissionGranted(null);
+          
+          // Try to request permission silently
+          navigator.geolocation.getCurrentPosition(
+            () => {
+              setLocationPermissionGranted(true);
+            },
+            (error) => {
+              // Only redirect if explicitly denied
+              if (error.code === error.PERMISSION_DENIED) {
+                setLocationPermissionGranted(false);
+                setLocation("/location-denied");
+              }
+            },
+            { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+          );
+        }
+
+        // Listen for permission changes
+        permission.onchange = () => {
+          if (permission.state === 'granted') {
+            setLocationPermissionGranted(true);
+          } else if (permission.state === 'denied') {
+            setLocationPermissionGranted(false);
+            setLocation("/location-denied");
+          }
+        };
+      } catch (error) {
+        // Fallback for browsers that don't support permissions API
+        // Try to get location, if it fails with PERMISSION_DENIED, redirect
+        navigator.geolocation.getCurrentPosition(
+          () => {
+            setLocationPermissionGranted(true);
+          },
+          (err: GeolocationPositionError) => {
+            if (err.code === err.PERMISSION_DENIED) {
+              setLocationPermissionGranted(false);
+              setLocation("/location-denied");
+            } else {
+              // Other error (timeout, etc.), allow user to continue
+              setLocationPermissionGranted(null);
+            }
+          },
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+        );
+      }
+    };
+
+    checkLocationPermission();
+    */
+  }, [setLocation]);
 
   const returnTime = timeSlot ? `${timePeriod}_${timeSlot}` : "";
 
@@ -63,7 +143,8 @@ export default function ServiceMain() {
       if (!res.ok) throw new Error("Failed to start trip");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (trip) => {
+      setCreatedTripId(trip.id);
       setIsSuccessOpen(true);
     },
     onError: () => {
@@ -106,7 +187,11 @@ export default function ServiceMain() {
 
   const handleSuccessClose = () => {
     setIsSuccessOpen(false);
-    setLocation("/home");
+    if (createdTripId) {
+      setLocation(`/trip-tracking/${createdTripId}`);
+    } else {
+      setLocation("/home");
+    }
   };
 
   return (
@@ -129,8 +214,8 @@ export default function ServiceMain() {
         </Button>
       </div>
 
-      <div className="space-y-6">
-        <Card className="bg-[#1e1e20] border-white/5 overflow-hidden">
+      <div className="space-y-6 mt-4">
+        <Card className="bg-card border-border overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-primary text-sm flex items-center gap-2">
               <MapPin className="w-4 h-4" />
@@ -148,7 +233,7 @@ export default function ServiceMain() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#1e1e20] border-white/5">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-primary text-sm flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
@@ -163,7 +248,7 @@ export default function ServiceMain() {
               <div className="space-y-3">
                 {contacts.length > 0 ? (
                   contacts.map((contact, idx) => (
-                    <div key={idx} className="flex items-center space-x-reverse space-x-3 p-2 rounded hover:bg-white/5 transition-colors">
+                    <div key={idx} className="flex items-center space-x-reverse space-x-3 p-2 rounded hover:bg-muted/50 transition-colors">
                       <Checkbox 
                         id={`contact-${idx}`} 
                         checked={selectedContacts.includes(contact.phone)}
@@ -191,7 +276,7 @@ export default function ServiceMain() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#1e1e20] border-white/5">
+        <Card className="bg-card border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-primary text-sm flex items-center gap-2">
               <Clock className="w-4 h-4" />
@@ -201,16 +286,16 @@ export default function ServiceMain() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs">تاريخ العودة</Label>
-              <div className="relative">
-                <Input 
-                  type="date" 
-                  value={returnDate}
-                  onChange={(e) => setReturnDate(e.target.value)}
-                  className="bg-background/50 border-white/10 text-right appearance-none" 
-                  style={{ colorScheme: "dark" }}
-                />
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              </div>
+              <Input 
+                type="date" 
+                value={returnDate}
+                onChange={(e) => setReturnDate(e.target.value)}
+                className="bg-background/50 border-border" 
+                style={{ 
+                  colorScheme: "light dark", // Supports both themes natively
+                  direction: "rtl"
+                }}
+              />
             </div>
             <div className="space-y-3">
               <Label className="text-xs">وقت العودة</Label>
@@ -223,7 +308,7 @@ export default function ServiceMain() {
                     "p-3 rounded-lg text-sm font-bold border transition-all",
                     timePeriod === "AM"
                       ? "bg-primary border-primary text-primary-foreground"
-                      : "bg-background/50 border-white/10 hover:bg-white/5 text-muted-foreground"
+                      : "bg-background/50 border-border hover:bg-muted text-muted-foreground"
                   )}
                 >
                   صباحاً (AM)
@@ -235,7 +320,7 @@ export default function ServiceMain() {
                     "p-3 rounded-lg text-sm font-bold border transition-all",
                     timePeriod === "PM"
                       ? "bg-primary border-primary text-primary-foreground"
-                      : "bg-background/50 border-white/10 hover:bg-white/5 text-muted-foreground"
+                      : "bg-background/50 border-border hover:bg-muted text-muted-foreground"
                   )}
                 >
                   مساءً (PM)
@@ -250,10 +335,10 @@ export default function ServiceMain() {
                     "p-3 rounded-lg text-xs font-medium border transition-all",
                     timeSlot === "early"
                       ? "bg-primary/20 border-primary text-primary"
-                      : "bg-background/50 border-white/10 hover:bg-white/5"
+                      : "bg-background/50 border-border hover:bg-muted"
                   )}
                 >
-                  6:00 – 12:00
+                  12:00 – 6:00
                 </button>
                 <button
                   onClick={() => setTimeSlot("late")}
@@ -262,10 +347,10 @@ export default function ServiceMain() {
                     "p-3 rounded-lg text-xs font-medium border transition-all",
                     timeSlot === "late"
                       ? "bg-primary/20 border-primary text-primary"
-                      : "bg-background/50 border-white/10 hover:bg-white/5"
+                      : "bg-background/50 border-border hover:bg-muted"
                   )}
                 >
-                  12:00 – 5:59
+                  6:00 – 12:00
                 </button>
               </div>
             </div>
@@ -282,19 +367,19 @@ export default function ServiceMain() {
       </div>
 
       <AlertDialog open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>
-        <AlertDialogContent className="bg-[#1e1e20] border-white/10 text-right" dir="rtl">
+        <AlertDialogContent className="bg-card border-border text-right" dir="rtl">
           <AlertDialogHeader className="text-right">
             <AlertDialogTitle className="text-primary text-xl font-bold flex items-center gap-2">
               <CheckCircle2 className="w-6 h-6" />
               تم تفعيل الخدمة
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400 pt-2">
+            <AlertDialogDescription className="text-muted-foreground pt-2">
               تم تفعيل خدمة تتبع بنجاح. سيتم إرسال التنبيهات في الموعد المحدد في حال عدم العودة.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-start">
             <AlertDialogAction onClick={handleSuccessClose} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              العودة للرئيسية
+              متابعة
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

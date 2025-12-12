@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, useEffect } from "react";
 import { GoogleMap, Circle, Marker, LoadScript } from "@react-google-maps/api";
 import { MapPin } from "lucide-react";
+import { useAppStore } from "@/lib/store";
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyC-UiOG588zN5JeLzcU3mcnPn5nrT86sh4";
 
@@ -25,12 +26,31 @@ export default function MapSelector({
   selectedLocation,
   height = "100%"
 }: MapSelectorProps) {
+  const { theme } = useAppStore();
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [center, setCenter] = useState(defaultCenter);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [showError, setShowError] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
+
+  // Dark mode map styles
+  const darkMapStyles = [
+    { featureType: "all", elementType: "geometry", stylers: [{ color: "#242424" }] },
+    { featureType: "all", elementType: "labels.text.stroke", stylers: [{ visibility: "off" }] },
+    { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#ffffff" }] },
+    { featureType: "water", elementType: "geometry", stylers: [{ color: "#17263c" }] },
+    { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] },
+  ];
+
+  // Light mode map styles (default Google Maps style with subtle adjustments)
+  const lightMapStyles = [
+    { featureType: "all", elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
+    { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9e2ff" }] },
+    { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  ];
+
+  const mapStyles = theme === 'dark' ? darkMapStyles : lightMapStyles;
 
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
@@ -99,7 +119,7 @@ export default function MapSelector({
     >
       {!isLoaded ? (
         <div 
-          className="w-full bg-neutral-800 flex items-center justify-center"
+          className="w-full bg-muted flex items-center justify-center"
           style={{ height }}
         >
           <div className="text-center text-muted-foreground">
@@ -130,33 +150,7 @@ export default function MapSelector({
               streetViewControl: false,
               mapTypeControl: false,
               fullscreenControl: true,
-              styles: [
-                {
-                  featureType: "all",
-                  elementType: "geometry",
-                  stylers: [{ color: "#242424" }],
-                },
-                {
-                  featureType: "all",
-                  elementType: "labels.text.stroke",
-                  stylers: [{ visibility: "off" }],
-                },
-                {
-                  featureType: "all",
-                  elementType: "labels.text.fill",
-                  stylers: [{ color: "#ffffff" }],
-                },
-                {
-                  featureType: "water",
-                  elementType: "geometry",
-                  stylers: [{ color: "#17263c" }],
-                },
-                {
-                  featureType: "road",
-                  elementType: "geometry",
-                  stylers: [{ color: "#38414e" }],
-                },
-              ],
+              styles: mapStyles,
             }}
           >
             {selectedLocation && (
@@ -187,7 +181,7 @@ export default function MapSelector({
               </>
             )}
           </GoogleMap>
-          <div className="absolute bottom-2 right-2 bg-black/70 px-3 py-2 rounded text-xs text-white z-10">
+          <div className="absolute bottom-2 right-2 bg-card/90 backdrop-blur-sm border border-border px-3 py-2 rounded text-xs text-card-foreground z-10 shadow-lg">
             {selectedLocation 
               ? "تم تحديد الموقع - اضغط لتغييره" 
               : "اضغط على الخريطة لتحديد الموقع"}

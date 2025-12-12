@@ -14,6 +14,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const setupSchema = z.object({
   city: z.string().min(1, "يرجى اختيار المدينة"),
@@ -31,6 +40,7 @@ type SetupFormValues = z.infer<typeof setupSchema>;
 export default function Setup() {
   const [, setLocation] = useLocation();
   const { setSetupComplete, setContacts, setMedicalInfo, setCity, setUserProfileId, userProfileId, contacts: storeContacts, city: storeCity, medicalInfo: storeMedicalInfo } = useAppStore();
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
   
   // Fetch existing contacts from API if userProfileId exists
   const { data: apiContacts } = useQuery({
@@ -83,10 +93,23 @@ export default function Setup() {
 
   // Load existing data into form when component mounts or data is fetched
   useEffect(() => {
-    const hasExistingData = existingContacts.length > 0 || profileData || storeCity || storeMedicalInfo;
+    // Wait for queries to finish loading before populating form (only if userProfileId exists)
+    if (userProfileId && apiContacts === undefined) {
+      return; // Still loading contacts
+    }
+    if (userProfileId && profileData === undefined) {
+      return; // Still loading profile
+    }
+
+    // Get data from API (most up-to-date) or fallback to store
+    const cityValue = profileData?.city || storeCity || "";
+    const bloodTypeValue = profileData?.bloodType || storeMedicalInfo?.bloodType || "";
+    const chronicDiseasesValue = profileData?.chronicDiseases || storeMedicalInfo?.chronicDiseases || "";
     
-    if (hasExistingData) {
-      // Ensure at least 3 contact slots, pad with empty ones if needed
+    // Only populate if we have at least city or medical info or contacts
+    const hasDataToLoad = cityValue || bloodTypeValue || chronicDiseasesValue || existingContacts.length > 0;
+    
+    if (hasDataToLoad) {
       const contactsToLoad = existingContacts.length > 0 
         ? existingContacts.length >= 3
           ? existingContacts
@@ -97,15 +120,24 @@ export default function Setup() {
             { name: "", phone: "", relationship: "" },
           ];
 
-      form.reset({
-        city: profileData?.city || storeCity || "",
-        contacts: contactsToLoad,
-        bloodType: profileData?.bloodType || storeMedicalInfo?.bloodType || "",
-        chronicDiseases: profileData?.chronicDiseases || storeMedicalInfo?.chronicDiseases || "",
-      });
+      // Only reset if values have changed to avoid unnecessary re-renders
+      const currentValues = form.getValues();
+      if (
+        currentValues.city !== cityValue ||
+        currentValues.bloodType !== bloodTypeValue ||
+        currentValues.chronicDiseases !== chronicDiseasesValue ||
+        JSON.stringify(currentValues.contacts) !== JSON.stringify(contactsToLoad)
+      ) {
+        form.reset({
+          city: cityValue,
+          contacts: contactsToLoad,
+          bloodType: bloodTypeValue,
+          chronicDiseases: chronicDiseasesValue,
+        });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiContacts, storeContacts, profileData, storeCity, storeMedicalInfo]);
+  }, [apiContacts, storeContacts, profileData, storeCity, storeMedicalInfo, userProfileId, existingContacts]);
 
   const saveProfileMutation = useMutation({
     mutationFn: async (data: SetupFormValues) => {
@@ -156,13 +188,20 @@ export default function Setup() {
     onSuccess: (profile, data) => {
       setUserProfileId(profile.id);
       setCity(data.city);
-      setContacts(data.contacts);
+      setContacts(data.contacts.filter(c => c.name && c.phone && c.relationship)); // Only save filled contacts
       setMedicalInfo({
         bloodType: data.bloodType || "",
         chronicDiseases: data.chronicDiseases || "",
       });
       setSetupComplete(true);
-      setLocation("/service-main");
+      // Update form with saved values
+      form.reset({
+        city: data.city,
+        contacts: data.contacts,
+        bloodType: data.bloodType || "",
+        chronicDiseases: data.chronicDiseases || "",
+      });
+      setIsSuccessOpen(true);
     },
     onError: () => {
       toast({
@@ -189,7 +228,7 @@ export default function Setup() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-10">
           
-          <Card className="bg-[#1e1e20] border-white/5">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="text-primary text-lg">بيانات السكن</CardTitle>
             </CardHeader>
@@ -202,7 +241,7 @@ export default function Setup() {
                     <FormLabel>مدينة السكن</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="bg-background/50 border-white/10 text-right">
+                        <SelectTrigger className="bg-background/50 border-border text-right">
                           <SelectValue placeholder="اختر المدينة" />
                         </SelectTrigger>
                       </FormControl>
@@ -221,13 +260,13 @@ export default function Setup() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e1e20] border-white/5">
+          <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-primary text-lg">جهات الاتصال (3-5)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {fields.map((field, index) => (
-                <div key={field.id} className="relative bg-background/30 p-4 rounded-lg border border-white/5">
+                <div key={field.id} className="relative bg-background/30 p-4 rounded-lg border border-border">
                   <div className="absolute left-2 top-2">
                     {fields.length > 3 && (
                       <Button 
@@ -249,7 +288,7 @@ export default function Setup() {
                         <FormItem>
                           <FormLabel className="text-xs text-muted-foreground">الاسم</FormLabel>
                           <FormControl>
-                            <Input {...field} className="bg-background/50 border-white/10" placeholder="الاسم الكامل" />
+                            <Input {...field} className="bg-background/50 border-border" placeholder="الاسم الكامل" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -263,7 +302,7 @@ export default function Setup() {
                           <FormItem>
                             <FormLabel className="text-xs text-muted-foreground">رقم الجوال</FormLabel>
                             <FormControl>
-                              <Input {...field} className="bg-background/50 border-white/10" placeholder="05xxxxxxxx" type="tel" />
+                              <Input {...field} className="bg-background/50 border-border" placeholder="05xxxxxxxx" type="tel" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -276,7 +315,7 @@ export default function Setup() {
                           <FormItem>
                             <FormLabel className="text-xs text-muted-foreground">صلة القرابة</FormLabel>
                             <FormControl>
-                              <Input {...field} className="bg-background/50 border-white/10" placeholder="أخ، أب، صديق..." />
+                              <Input {...field} className="bg-background/50 border-border" placeholder="أخ، أب، صديق..." />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -303,7 +342,7 @@ export default function Setup() {
             </CardContent>
           </Card>
 
-          <Card className="bg-[#1e1e20] border-white/5">
+          <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="text-primary text-lg">المعلومات الطبية (اختياري)</CardTitle>
             </CardHeader>
@@ -316,7 +355,7 @@ export default function Setup() {
                     <FormLabel>فصيلة الدم</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="bg-background/50 border-white/10 text-right">
+                        <SelectTrigger className="bg-background/50 border-border text-right">
                           <SelectValue placeholder="اختياري" />
                         </SelectTrigger>
                       </FormControl>
@@ -337,7 +376,7 @@ export default function Setup() {
                   <FormItem>
                     <FormLabel>الأمراض المزمنة</FormLabel>
                     <FormControl>
-                      <Input {...field} className="bg-background/50 border-white/10" placeholder="سكري، ضغط، ..." />
+                      <Input {...field} className="bg-background/50 border-border" placeholder="سكري، ضغط، ..." />
                     </FormControl>
                   </FormItem>
                 )}
@@ -354,6 +393,32 @@ export default function Setup() {
           </Button>
         </form>
       </Form>
+
+      {/* Success Dialog */}
+      <AlertDialog open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>
+        <AlertDialogContent className="bg-card border-border text-right" dir="rtl">
+          <AlertDialogHeader className="text-right">
+            <AlertDialogTitle className="text-primary text-xl font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-6 h-6" />
+              تم حفظ الإعدادات
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground pt-2">
+              تم حفظ بيانات الإعدادات بنجاح. يمكنك الآن البدء في استخدام الخدمة.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-start">
+            <AlertDialogAction 
+              onClick={() => {
+                setIsSuccessOpen(false);
+                setLocation("/service-main");
+              }} 
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              متابعة
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
